@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ky">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Даана-кол фонду</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1c1b19;
+    --paper:#faf7f0;
+    --paper-2:#f1ece0;
+    --ink:#2a2622;
+    --ink-muted:#8a8377;
+    --green:#2d5f4c;
+    --red:#b33a3a;
+    --gold:#c9a24b;
+    --blue:#2b5f8a;
+    --line:#e3dccb;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--paper); font-family:'Space Grotesk',sans-serif; min-height:100vh;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header{padding:22px 16px 14px; text-align:center; border-bottom:1px solid #33312c;}
+  header h1{margin:0; font-size:20px; letter-spacing:.02em;}
+  header .sub{color:var(--ink-muted); font-size:12px; margin-top:4px; font-family:'IBM Plex Mono',monospace;}
+  nav{display:flex; justify-content:center; gap:0; margin-top:16px; flex-wrap:wrap;}
+  nav button{background:none; border:none; color:var(--ink-muted); font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:700; padding:10px 14px; cursor:pointer; border-bottom:2px solid transparent;}
+  nav button.active{color:var(--gold); border-bottom:2px solid var(--gold);}
+
+  main{max-width:480px; margin:0 auto; padding:20px 16px 60px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .receipt{background:var(--paper); color:var(--ink); border-radius:6px 6px 0 0; padding:22px 20px 26px; position:relative; box-shadow:0 12px 30px rgba(0,0,0,.35); margin-bottom:20px;}
+  .receipt::after{content:""; display:block; position:absolute; left:0; right:0; bottom:-9px; height:16px;
+    background: linear-gradient(135deg, var(--paper) 8px, transparent 0) 0 0, linear-gradient(-135deg, var(--paper) 8px, transparent 0) 8px 0;
+    background-size:16px 16px; background-repeat:repeat-x;}
+  .receipt h2{margin:0 0 4px; font-size:16px; text-align:center; letter-spacing:.03em;}
+  .receipt .center-muted{text-align:center; color:var(--ink-muted); font-size:12px; margin-bottom:16px; font-family:'IBM Plex Mono',monospace;}
+  .dashed{border-top:1.5px dashed var(--line); margin:14px 0;}
+
+  .qr-wrap{display:flex; justify-content:center; margin:14px 0;}
+  .qr-wrap canvas, .qr-wrap img{border-radius:4px; max-width:220px; width:100%;}
+  .card-number{text-align:center; font-size:22px; font-weight:600; letter-spacing:.06em; margin:10px 0 2px;}
+  .card-owner{text-align:center; color:var(--ink-muted); font-size:13px;}
+  .copy-btn{display:block; margin:14px auto 0; background:var(--green); color:#fff; border:none; padding:10px 18px; border-radius:6px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer;}
+  .instruction{background:var(--paper-2); border-left:3px solid var(--gold); padding:10px 12px; font-size:13px; line-height:1.5; margin-top:16px; border-radius:0 4px 4px 0;}
+  .instruction.warn{border-left-color:var(--red);}
+
+  .fund-banner{text-align:center;}
+  .fund-banner .name{font-size:19px; font-weight:700; margin:4px 0 2px;}
+  .fund-banner .detail{font-size:13px; color:var(--ink-muted); font-family:'IBM Plex Mono',monospace;}
+
+  label{display:block; font-size:12px; color:var(--ink-muted); margin:14px 0 5px; font-family:'IBM Plex Mono',monospace;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=number], input[type=password], textarea{width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:5px; font-family:'IBM Plex Mono',monospace; font-size:14px; background:#fff; color:var(--ink);}
+  textarea{resize:vertical; min-height:70px; line-height:1.6;}
+  .amount-check{margin-top:10px; padding:10px 12px; border-radius:5px; font-size:13px; font-family:'IBM Plex Mono',monospace;}
+  .amount-check.ok{background:#e4efe9; color:var(--green);}
+  .amount-check.bad{background:#f4e4e2; color:var(--red);}
+  .amount-check.neutral{background:var(--paper-2); color:var(--ink-muted);}
+
+  .btn{width:100%; margin-top:16px; background:var(--green); color:#fff; border:none; padding:13px; border-radius:6px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; cursor:pointer;}
+  .btn:disabled{background:#c7c2b4; cursor:not-allowed;}
+  .btn.secondary{background:none; border:1.5px solid var(--ink); color:var(--ink);}
+  .btn.danger{background:var(--red);}
+  .btn.whatsapp{background:#1f8a3e;}
+  .btn.blue{background:var(--blue);}
+  .btn.gold{background:var(--gold); color:var(--ink);}
+
+  .scan-buttons{display:flex; gap:10px;}
+  .scan-buttons button{flex:1; padding:16px 8px; border-radius:8px; border:1.5px dashed var(--line); background:var(--paper-2); color:var(--ink); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer;}
+  .preview-wrap{margin-top:14px; text-align:center;}
+  .preview-wrap img{max-width:100%; max-height:260px; border-radius:6px; border:1px solid var(--line);}
+  .spinner{display:inline-block; width:16px; height:16px; border:2px solid var(--ink-muted); border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .status-line{font-size:12px; color:var(--ink-muted); text-align:center; margin-top:10px; font-family:'IBM Plex Mono',monospace;}
+
+  .totals-bar{display:flex; justify-content:space-between; background:var(--green); color:#fff; padding:14px 16px; border-radius:8px; margin-bottom:14px; font-family:'IBM Plex Mono',monospace;}
+  .totals-bar .n{font-size:20px; font-weight:600;}
+  .totals-bar .l{font-size:11px; opacity:.85;}
+  .entry{background:var(--paper); color:var(--ink); border-radius:5px; padding:12px 14px; margin-bottom:10px; font-size:13px; position:relative;}
+  .entry .names{font-weight:600; line-height:1.5;}
+  .entry .meta{color:var(--ink-muted); font-family:'IBM Plex Mono',monospace; font-size:11px; margin-top:6px; display:flex; justify-content:space-between;}
+  .entry .amt{color:var(--green); font-weight:700;}
+  .entry .row-btns{margin-top:8px; display:flex; gap:8px;}
+  .entry .row-btns button{font-size:11px; padding:5px 10px; border-radius:4px; border:1px solid var(--line); background:#fff; color:var(--ink-muted); cursor:pointer; font-family:'IBM Plex Mono',monospace;}
+  .empty-state{text-align:center; color:var(--ink-muted); padding:30px 10px; font-size:13px;}
+
+  /* notebook-style public ledger */
+  .notebook{
+    background-color:#fffdf6;
+    background-image: repeating-linear-gradient(to bottom, transparent, transparent 31px, #c3d2e8 32px);
+    border-radius:4px;
+    padding:14px 18px 14px 40px;
+    position:relative;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+    margin-bottom:12px;
+  }
+  .notebook::before{
+    content:"";
+    position:absolute;
+    left:24px; top:0; bottom:0;
+    width:1.5px;
+    background:#d9928c;
+  }
+  .notebook-line{
+    font-family:'Caveat',cursive;
+    font-size:23px;
+    line-height:32px;
+    color:#25345c;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  .notebook-empty{font-family:'Caveat',cursive; font-size:21px; color:var(--ink-muted); line-height:32px; padding:6px 0;}
+
+  .overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:50; align-items:center; justify-content:center; padding:20px;}
+  .overlay.active{display:flex;}
+  .modal{background:var(--paper); color:var(--ink); border-radius:8px; padding:20px; max-width:340px; width:100%;}
+  .modal h3{margin:0 0 10px; color:var(--red); font-size:16px;}
+  .modal p{font-size:13px; line-height:1.6; margin:0 0 14px;}
+
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:20px; font-size:13px; z-index:60; opacity:0; transition:opacity .25s; pointer-events:none; max-width:90%; text-align:center;}
+  .toast.show{opacity:1;}
+
+  .pin-gate{text-align:center; padding:10px 0;}
+  .pin-gate input{max-width:160px; margin:0 auto; text-align:center; font-size:20px; letter-spacing:.3em;}
+  .hidden-input{display:none;}
+  .fund-status-pill{display:inline-block; padding:4px 10px; border-radius:12px; font-size:11px; font-family:'IBM Plex Mono',monospace; margin-bottom:10px;}
+  .fund-status-pill.open{background:#e4efe9; color:var(--green);}
+  .fund-status-pill.closed{background:#f4e4e2; color:var(--red);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧾 Даана-кол фонду</h1>
+  <div class="sub">адам башына <span id="priceDisplay">150</span> сом</div>
+  <nav>
+    <button class="tab-btn active" data-view="donate">Которуу</button>
+    <button class="tab-btn" data-view="admin">Админ</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- DONATE VIEW -->
+  <section class="view active" id="view-donate">
+
+    <div class="receipt fund-banner" id="fundBanner"></div>
+
+    <div id="donateActiveBlock" style="display:none;">
+      <div class="receipt">
+        <h2>Кайрымдуулукка которуу</h2>
+        <div class="center-muted">QR же карта номери аркылуу</div>
+        <div class="qr-wrap" id="qrWrap"></div>
+        <div class="card-number" id="cardNumberDisplay">— тапшырылган жок —</div>
+        <div class="card-owner" id="cardOwnerDisplay"></div>
+        <button class="copy-btn" onclick="copyCardNumber()">Номерди көчүрүү</button>
+        <div class="dashed"></div>
+        <div class="instruction">
+          ✍️ Которгондо, чектин <b>комментарийине өз атыңызды</b> жазыңыз.
+          Бир нече адам үчүн төлөп жатсаңыз, ар бир адамдын атын жазыңыз.
+        </div>
+      </div>
+
+      <div class="receipt">
+        <h2>Чегиңизди кошуңуз</h2>
+        <div class="center-muted">Камера менен тартыңыз же файлдан тандаңыз — AI өзү окуйт</div>
+
+        <div id="scanIdle" class="scan-buttons">
+          <button onclick="document.getElementById('cameraInput').click()">📷 Камера</button>
+          <button onclick="document.getElementById('fileInput').click()">🖼️ Файлдан</button>
+        </div>
+        <input type="file" id="cameraInput" class="hidden-input" accept="image/*" capture="environment">
+        <input type="file" id="fileInput" class="hidden-input" accept="image/*">
+
+        <div id="previewBlock" style="display:none;">
+          <div class="preview-wrap"><img id="previewImg"></div>
+          <button class="btn blue" id="analyzeBtn" onclick="analyzeReceipt()">🤖 AI менен окутуу</button>
+          <button class="btn secondary" onclick="resetScan()">Баштан баштоо</button>
+          <div class="status-line" id="statusLine"></div>
+        </div>
+
+        <div id="rejectBlock" style="display:none;">
+          <div class="dashed"></div>
+          <div class="instruction warn"><b>❌ Бул чек кабыл алынбады.</b><br><span id="rejectReason"></span></div>
+          <button class="btn secondary" onclick="resetScan()">Башка чек тандоо</button>
+        </div>
+
+        <div id="reviewBlock" style="display:none;">
+          <div class="dashed"></div>
+          <div class="center-muted">AI окуган маалымат — текшерип, керек болсо түзөтүңүз</div>
+          <div id="recipientInfo" class="status-line" style="margin-top:0;"></div>
+          <label>Аты-жөндөр (сапма-сап)</label>
+          <textarea id="publicNamesInput" oninput="recalcPublic()"></textarea>
+          <label>Которулган сумма (сом)</label>
+          <input type="number" id="publicAmountInput" oninput="recalcPublic()">
+          <label>Которгон дата/убакыт (эгер белгилүү болсо)</label>
+          <input type="text" id="publicDatetimeInput" placeholder="2026-08-22 14:30">
+          <div class="amount-check neutral" id="publicAmountCheck">—</div>
+          <button class="btn" id="publicAddBtn" disabled onclick="tryAddEntry(true)">Тизмеге кошуу</button>
+          <button class="btn secondary" onclick="resetScan()">Жокко чыгаруу</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="totals-bar">
+      <div><div class="n" id="pubTotalCount">0</div><div class="l">АДАМ</div></div>
+      <div style="text-align:right;"><div class="n" id="pubTotalSum">0</div><div class="l">СОМ</div></div>
+    </div>
+    <div class="notebook" id="publicEntriesList"></div>
+    <button class="btn secondary" onclick="takeScreenshot()">📸 Скриншот сактоо</button>
+  </section>
+
+  <!-- ADMIN VIEW -->
+  <section class="view" id="view-admin">
+
+    <div id="pinGate" class="pin-gate">
+      <div class="receipt">
+        <h2 id="pinTitle">Админ PIN</h2>
+        <div class="center-muted">Кирүү үчүн PIN киргизиңиз</div>
+        <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••">
+        <button class="btn" onclick="checkPin()">Кирүү</button>
+        <div id="pinMsg" style="color:var(--red); font-size:12px; margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <div id="adminContent" style="display:none;">
+      <nav style="margin:-6px 0 16px;">
+        <button class="tab-btn admin-sub active" data-sub="fund">Фонд</button>
+        <button class="tab-btn admin-sub" data-sub="archive">Архив</button>
+        <button class="tab-btn admin-sub" data-sub="add">Кол менен кошуу</button>
+        <button class="tab-btn admin-sub" data-sub="list">Тизме</button>
+        <button class="tab-btn admin-sub" data-sub="settings">Жөндөө</button>
+      </nav>
+
+      <div class="sub-view active" id="sub-fund">
+        <div class="receipt">
+          <h2>Фонд башкаруу</h2>
+          <div id="fundStatusArea"></div>
+
+          <div id="fundOpenForm">
+            <label>Кимге арналат (аты-фамилиясы)</label>
+            <input type="text" id="fundName" placeholder="Асан Асанов">
+            <label>Акыркы сапарга узатуу кайсы жерде болот</label>
+            <input type="text" id="fundLocation" placeholder="Дареги">
+            <label>Саат канчада</label>
+            <input type="text" id="fundTime" placeholder="14:00">
+            <button class="btn gold" onclick="openFund()">Фонд ачуу</button>
+          </div>
+
+          <div id="fundCloseArea" style="display:none;">
+            <div class="dashed"></div>
+            <div id="fundMoneyBar"></div>
+            <label>Акыркы сапарга узатуу жерине канча сом которду</label>
+            <input type="number" id="expenseAmount" placeholder="0">
+            <label>Эскертүү (милдеттүү эмес)</label>
+            <input type="text" id="expenseNote" placeholder="мис. дасторкон чыгымы">
+            <button class="btn blue" onclick="addExpense()">Которгонду каттоо</button>
+            <div id="expensesList" style="margin-top:12px;"></div>
+            <div class="dashed"></div>
+            <button class="btn danger" onclick="closeFund()">Фонд жабуу (архивге кетет)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-view" id="sub-archive" style="display:none;">
+        <div id="archiveList"></div>
+      </div>
+
+      <div class="sub-view" id="sub-add" style="display:none;">
+        <div class="receipt">
+          <h2>Кол менен кошуу</h2>
+          <div class="center-muted">Чек окулбай калса, буга кол менен киргизиңиз</div>
+          <label>Аты-жөндөр (сапма-сап)</label>
+          <textarea id="namesInput" placeholder="Алтынбек Сулайманов&#10;Нурлан Сулайманов" oninput="recalc()"></textarea>
+          <label>Которулган сумма (сом)</label>
+          <input type="number" id="amountInput" placeholder="0" oninput="recalc()">
+          <div class="amount-check neutral" id="amountCheck">Аты жана сумманы киргизиңиз</div>
+          <button class="btn" id="addBtn" disabled onclick="tryAddEntry(false)">Тизмеге кошуу</button>
+        </div>
+      </div>
+
+      <div class="sub-view" id="sub-list" style="display:none;">
+        <div class="totals-bar">
+          <div><div class="n" id="totalCount">0</div><div class="l">АДАМ</div></div>
+          <div style="text-align:right;"><div class="n" id="totalSum">0</div><div class="l">СОМ</div></div>
+        </div>
+        <div id="entriesList"></div>
+      </div>
+
+      <div class="sub-view" id="sub-settings" style="display:none;">
+        <div class="receipt">
+          <h2>Жөндөөлөр</h2>
+          <label>Telegram бот токени</label>
+          <input type="text" id="cfgToken" placeholder="123456:ABC-DEF...">
+          <label>Telegram chat_id</label>
+          <input type="text" id="cfgChatId" placeholder="-1001234567890">
+          <label>Gemini API ачкычы (чек окуу үчүн)</label>
+          <input type="text" id="cfgGemini" placeholder="AIza...">
+          <label>Адам башына сумма (сом)</label>
+          <input type="number" id="cfgPrice" placeholder="150">
+          <label>Карта/эсеп номери</label>
+          <input type="text" id="cfgCard" placeholder="1234 5678 9012 3456">
+          <label>Кабыл алуучунун телефон номери (номер аркылуу которуу үчүн)</label>
+          <input type="text" id="cfgPhone" placeholder="996778126333">
+          <label>Эсеп ээсинин аты (милдеттүү эмес)</label>
+          <input type="text" id="cfgOwner" placeholder="Алтынбек Сулайманов">
+          <label>QR сүрөтү (банктын өз QR'у, милдеттүү эмес)</label>
+          <input type="file" id="cfgQrFile" accept="image/*">
+          <div id="qrFileStatus" style="font-size:11px; color:var(--ink-muted); margin-top:4px;"></div>
+          <label>Админдин WhatsApp номери (окшош ат эскертүүсү үчүн)</label>
+          <input type="text" id="cfgWhatsapp" placeholder="996700123456">
+          <div class="dashed"></div>
+          <label>Жаңы PIN коюу</label>
+          <input type="password" id="cfgPin" inputmode="numeric" maxlength="6" placeholder="••••">
+          <button class="btn" onclick="saveSettings()">Сактоо</button>
+          <button class="btn secondary" onclick="testTelegram()">Telegram'ды текшерүү</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="overlay" id="dupModal">
+  <div class="modal">
+    <h3>⚠️ Окшош ат табылды</h3>
+    <p id="dupText"></p>
+    <button class="btn danger" onclick="confirmAddAnyway()">Баары бир кошуу</button>
+    <button class="btn whatsapp" onclick="sendWhatsappAlert()">WhatsApp'ка эскертүү жөнөтүү</button>
+    <button class="btn secondary" onclick="closeDupModal()">Жокко чыгаруу</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULTS = { token:'', chatId:'', gemini:'', price:150, card:'', phone:'', owner:'', qr:'', whatsapp:'', pin:'' };
+const CAMPAIGN_DEFAULTS = { status:'closed', deceasedName:'', location:'', time:'', openedAt:null, closedAt:null, expenses:[] };
+let cfg = loadConfig();
+let entries = loadEntries();
+let campaign = loadCampaign();
+let history_ = loadHistory();
+let pendingEntry = null;
+let pendingDuplicateNames = [];
+let pendingIsPublic = false;
+let currentImageBase64 = null;
+let currentImageMime = null;
+
+function loadConfig(){ try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('ktr_config')||'{}')); }catch(e){ return Object.assign({}, DEFAULTS); } }
+function saveConfig(){ localStorage.setItem('ktr_config', JSON.stringify(cfg)); }
+function loadEntries(){ try{ return JSON.parse(localStorage.getItem('ktr_entries')||'[]'); }catch(e){ return []; } }
+function saveEntries(){ localStorage.setItem('ktr_entries', JSON.stringify(entries)); }
+function loadCampaign(){ try{ return Object.assign({}, CAMPAIGN_DEFAULTS, JSON.parse(localStorage.getItem('ktr_campaign')||'{}')); }catch(e){ return Object.assign({}, CAMPAIGN_DEFAULTS); } }
+function saveCampaign(){ localStorage.setItem('ktr_campaign', JSON.stringify(campaign)); }
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem('ktr_history')||'[]'); }catch(e){ return []; } }
+function saveHistory(){ localStorage.setItem('ktr_history', JSON.stringify(history_)); }
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll('.tab-btn[data-view]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn[data-view]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+document.querySelectorAll('.admin-sub').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.admin-sub').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.sub-view').forEach(v=>v.style.display='none');
+    document.getElementById('sub-'+btn.dataset.sub).style.display='block';
+    if(btn.dataset.sub==='list') renderList();
+    if(btn.dataset.sub==='settings') fillSettingsForm();
+    if(btn.dataset.sub==='fund') renderFundAdmin();
+    if(btn.dataset.sub==='archive') renderArchive();
+  });
+});
+
+/* ---------- fund / campaign ---------- */
+function renderFundAdmin(){
+  const statusArea = document.getElementById('fundStatusArea');
+  const openForm = document.getElementById('fundOpenForm');
+  const closeArea = document.getElementById('fundCloseArea');
+  if(campaign.status==='open'){
+    statusArea.innerHTML = `<span class="fund-status-pill open">АЧЫК</span><br>
+      <b>${escapeHtml(campaign.deceasedName)}</b><br>
+      ${escapeHtml(campaign.location||'')} ${campaign.time?('саат '+escapeHtml(campaign.time)):''}`;
+    openForm.style.display='none';
+    closeArea.style.display='block';
+
+    const collected = entries.reduce((s,e)=>s+e.amount,0);
+    const expensesTotal = (campaign.expenses||[]).reduce((s,x)=>s+x.amount,0);
+    const remaining = collected - expensesTotal;
+    document.getElementById('fundMoneyBar').innerHTML = `
+      <div class="totals-bar" style="margin-bottom:10px;">
+        <div><div class="n">${collected}</div><div class="l">ЧОГУЛГАН</div></div>
+        <div><div class="n">${expensesTotal}</div><div class="l">ЧЫГЫМ</div></div>
+        <div style="text-align:right;"><div class="n">${remaining}</div><div class="l">КАЛГАН</div></div>
+      </div>`;
+
+    const list = campaign.expenses||[];
+    document.getElementById('expensesList').innerHTML = list.length ? list.map(x=>`
+      <div class="entry">
+        <div class="names">${x.amount} сом ${x.note ? '— '+escapeHtml(x.note) : ''}</div>
+        <div class="meta"><span>${x.date}</span>
+          <button onclick="deleteExpense('${x.id}')" style="border:1px solid var(--line); background:#fff; color:var(--ink-muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer;">Өчүрүү</button>
+        </div>
+      </div>
+    `).join('') : '<div class="empty-state">Азырынча чыгым катталган жок</div>';
+  } else {
+    statusArea.innerHTML = `<span class="fund-status-pill closed">ЖАБЫК</span>` +
+      (campaign.deceasedName ? `<br><span style="color:var(--ink-muted); font-size:12px;">Акыркы: ${escapeHtml(campaign.deceasedName)}</span>` : '');
+    document.getElementById('fundName').value='';
+    document.getElementById('fundLocation').value='';
+    document.getElementById('fundTime').value='';
+    openForm.style.display='block';
+    closeArea.style.display='none';
+  }
+}
+function openFund(){
+  const name = document.getElementById('fundName').value.trim();
+  if(!name){ toast('Аты-фамилиясын киргизиңиз'); return; }
+  const location = document.getElementById('fundLocation').value.trim();
+  const time = document.getElementById('fundTime').value.trim();
+  if(entries.length>0 || (campaign.expenses||[]).length>0){
+    history_.push({ campaign: Object.assign({}, campaign), entries: entries.slice(), archivedAt: Date.now() });
+    saveHistory();
+    entries = [];
+    saveEntries();
+  }
+  campaign = { status:'open', deceasedName:name, location, time, openedAt: Date.now(), closedAt:null, expenses:[] };
+  saveCampaign();
+  toast('Фонд ачылды ✓');
+  renderFundAdmin();
+  renderDonateView();
+  renderPublicList();
+  renderList();
+}
+function addExpense(){
+  const amount = parseFloat(document.getElementById('expenseAmount').value)||0;
+  if(amount<=0){ toast('Сумманы киргизиңиз'); return; }
+  const note = document.getElementById('expenseNote').value.trim();
+  if(!campaign.expenses) campaign.expenses = [];
+  campaign.expenses.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,5), amount, note, date: new Date().toLocaleString('ky-KG') });
+  saveCampaign();
+  document.getElementById('expenseAmount').value='';
+  document.getElementById('expenseNote').value='';
+  toast('Катталды ✓');
+  renderFundAdmin();
+}
+function deleteExpense(id){
+  campaign.expenses = (campaign.expenses||[]).filter(x=>x.id!==id);
+  saveCampaign();
+  renderFundAdmin();
+}
+function closeFund(){
+  history_.push({ campaign: Object.assign({}, campaign, {status:'closed', closedAt: Date.now()}), entries: entries.slice(), archivedAt: Date.now() });
+  saveHistory();
+  campaign.status='closed';
+  campaign.closedAt = Date.now();
+  saveCampaign();
+  entries = [];
+  saveEntries();
+  toast('Фонд жабылды жана архивге кошулду ✓');
+  renderFundAdmin();
+  renderDonateView();
+  renderPublicList();
+  renderList();
+}
+function renderArchive(){
+  const el = document.getElementById('archiveList');
+  if(history_.length===0){ el.innerHTML = '<div class="empty-state">Архив азырынча бош</div>'; return; }
+  const sorted = [...history_].sort((a,b)=>b.archivedAt-a.archivedAt);
+  el.innerHTML = sorted.map((h,i)=>{
+    const c = h.campaign||{};
+    const count = (h.entries||[]).reduce((s,e)=>s+e.names.length,0);
+    const collected = (h.entries||[]).reduce((s,e)=>s+e.amount,0);
+    const expensesTotal = (c.expenses||[]).reduce((s,x)=>s+x.amount,0);
+    const remaining = collected - expensesTotal;
+    return `
+      <div class="receipt">
+        <h2>${escapeHtml(c.deceasedName||'Аты жок')}</h2>
+        <div class="center-muted">${escapeHtml(c.location||'')} ${c.time?('· саат '+escapeHtml(c.time)):''}</div>
+        <div class="totals-bar" style="margin-bottom:10px;">
+          <div><div class="n">${collected}</div><div class="l">ЧОГУЛГАН</div></div>
+          <div><div class="n">${expensesTotal}</div><div class="l">ЧЫГЫМ</div></div>
+          <div style="text-align:right;"><div class="n">${remaining}</div><div class="l">КАЛГАН</div></div>
+        </div>
+        <div class="status-line">${count} адам катталган</div>
+      </div>`;
+  }).join('');
+}
+
+/* ---------- donate view ---------- */
+function renderDonateView(){
+  document.getElementById('priceDisplay').textContent = cfg.price;
+  const banner = document.getElementById('fundBanner');
+  const activeBlock = document.getElementById('donateActiveBlock');
+  if(campaign.status==='open'){
+    banner.innerHTML = `
+      <div class="name">${escapeHtml(campaign.deceasedName)}</div>
+      <div class="detail">${escapeHtml(campaign.location||'')}${campaign.time?(' · саат '+escapeHtml(campaign.time)):''}</div>`;
+    activeBlock.style.display='block';
+  } else {
+    banner.innerHTML = `
+      <div class="name">Азырынча ачык фонд жок</div>
+      <div class="detail">Жаңы фонд ачылганда бул жерде көрүнөт</div>`;
+    activeBlock.style.display='none';
+  }
+  document.getElementById('cardNumberDisplay').textContent = cfg.card || '— тапшырылган жок —';
+  document.getElementById('cardOwnerDisplay').textContent = cfg.owner || '';
+  const qrWrap = document.getElementById('qrWrap');
+  qrWrap.innerHTML = '';
+  if(cfg.qr){
+    const img = document.createElement('img'); img.src = cfg.qr; qrWrap.appendChild(img);
+  } else if(cfg.card){
+    const canvas = document.createElement('canvas'); qrWrap.appendChild(canvas);
+    new QRious({ element: canvas, value: cfg.card, size: 220, background:'#faf7f0', foreground:'#2a2622' });
+  }
+}
+function copyCardNumber(){
+  if(!cfg.card){ toast('Карта номери азырынча жок'); return; }
+  navigator.clipboard.writeText(cfg.card).then(()=>toast('Көчүрүлдү ✓'));
+}
+
+/* ---------- pin gate ---------- */
+function refreshPinGate(){
+  const gate = document.getElementById('pinGate');
+  const content = document.getElementById('adminContent');
+  if(sessionStorage.getItem('ktr_admin_ok')==='1'){
+    gate.style.display='none'; content.style.display='block';
+    renderFundAdmin(); renderList(); fillSettingsForm();
+  } else {
+    gate.style.display='block'; content.style.display='none';
+    document.getElementById('pinTitle').textContent = cfg.pin ? 'Админ PIN' : 'Алгачкы жолу: PIN коюңуз';
+  }
+}
+function checkPin(){
+  const val = document.getElementById('pinInput').value.trim();
+  if(!cfg.pin){
+    if(val.length<4){ document.getElementById('pinMsg').textContent='Кеминде 4 сан киргизиңиз'; return; }
+    cfg.pin = val; saveConfig();
+    sessionStorage.setItem('ktr_admin_ok','1');
+    toast('PIN коюлду ✓'); refreshPinGate(); return;
+  }
+  if(val === cfg.pin){ sessionStorage.setItem('ktr_admin_ok','1'); refreshPinGate(); }
+  else { document.getElementById('pinMsg').textContent='PIN туура эмес'; }
+}
+
+/* ---------- receipt scan (public) ---------- */
+document.getElementById('cameraInput').addEventListener('change', handleImageSelect);
+document.getElementById('fileInput').addEventListener('change', handleImageSelect);
+
+function handleImageSelect(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const dataUrl = ev.target.result;
+    currentImageBase64 = dataUrl.split(',')[1];
+    currentImageMime = file.type || 'image/jpeg';
+    document.getElementById('previewImg').src = dataUrl;
+    document.getElementById('scanIdle').style.display='none';
+    document.getElementById('previewBlock').style.display='block';
+    document.getElementById('reviewBlock').style.display='none';
+    document.getElementById('rejectBlock').style.display='none';
+    document.getElementById('statusLine').textContent='';
+  };
+  reader.readAsDataURL(file);
+}
+function resetScan(){
+  currentImageBase64=null; currentImageMime=null;
+  document.getElementById('cameraInput').value='';
+  document.getElementById('fileInput').value='';
+  document.getElementById('scanIdle').style.display='flex';
+  document.getElementById('previewBlock').style.display='none';
+  document.getElementById('reviewBlock').style.display='none';
+  document.getElementById('rejectBlock').style.display='none';
+  document.getElementById('publicNamesInput').value='';
+  document.getElementById('publicAmountInput').value='';
+  document.getElementById('publicDatetimeInput').value='';
+}
+
+async function analyzeReceipt(){
+  if(campaign.status!=='open'){ toast('Азырынча ачык фонд жок'); return; }
+  if(!cfg.gemini){ toast('Gemini API ачкычы жөндөлгөн эмес — Админ → Жөндөөдөн киргизиңиз'); return; }
+  const btn = document.getElementById('analyzeBtn');
+  const status = document.getElementById('statusLine');
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span> AI чекти окуп жатат...';
+  const prompt = 'Бул акча которуу чегинин (банк квитанциясынын) сүрөтү. Тап: 1) Чектеги жөнөтүүчүнүн комментарийинде/назначение платежада жазылган аты-жөндөр (бир же бир нечe болушу мүмкүн), 2) которулган сумма, 3) чектеги так дата/убакыт (көрүнсө), 4) "Получатель" талаасында көрсөтүлгөн алуучунун аты, 5) төлөм кайсы телефон номерине же карта номерине жөнөтүлгөн (Назначение платежа же Получатель талааларынан, номердин цифраларын гана). Жооп катары ТАКЫР башка сөз кошпостон, так ушул JSON форматында гана жаз: {"names": ["Аты Жөнү"], "amount": 0, "datetime": "YYYY-MM-DD HH:MM же null", "recipientName": "Получательдин аты же null", "destination": "телефон же карта номеринин цифралары же null"}.';
+  try{
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cfg.gemini}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents:[{ parts:[
+          { text: prompt },
+          { inline_data:{ mime_type: currentImageMime, data: currentImageBase64 } }
+        ]}]
+      })
+    });
+    const data = await res.json();
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    text = text.replace(/```json/gi,'').replace(/```/g,'').trim();
+    const parsed = JSON.parse(text);
+
+    const match = matchesDestination(parsed.destination);
+    document.getElementById('previewBlock').style.display='none';
+
+    if(match === false){
+      document.getElementById('rejectReason').textContent =
+        `Чек "${parsed.recipientName || 'белгисиз алуучу'}" (${parsed.destination || '—'}) дегенге жөнөтүлгөн, бул сиздин конфигурацияланган номериңизге/картаңызга дал келген жок.`;
+      document.getElementById('rejectBlock').style.display='block';
+      status.textContent='';
+      toast('Четке кагылды — башка алуучуга жөнөтүлгөн');
+      btn.disabled=false;
+      return;
+    }
+
+    if(isExactReceiptDuplicate(parsed.amount, parsed.datetime)){
+      document.getElementById('rejectReason').textContent = 'Бул чек мурда каттлаган (окшош дата/убакыт жана сумма табылды). Бир чек бир жолу гана кошулат.';
+      document.getElementById('rejectBlock').style.display='block';
+      status.textContent='';
+      toast('Четке кагылды — бул чек мурда каттлаган');
+      btn.disabled=false;
+      return;
+    }
+
+    document.getElementById('publicNamesInput').value = (parsed.names||[]).join('\n');
+    document.getElementById('publicAmountInput').value = parsed.amount || '';
+    document.getElementById('publicDatetimeInput').value = parsed.datetime || '';
+    const info = document.getElementById('recipientInfo');
+    if(match === true){
+      info.textContent = `✓ Алуучу текшерилди: ${parsed.recipientName || ''} (${parsed.destination || ''})`;
+    } else {
+      info.textContent = `⚠️ Алуучу такталган жок — колдонуучунун сөзүнө ишенип кошулат`;
+    }
+    document.getElementById('reviewBlock').style.display='block';
+    recalcPublic();
+    toast('AI окуду — текшерип бекитиңиз');
+  }catch(e){
+    status.textContent = 'AI окуй алган жок — маалыматты кол менен киргизиңиз';
+    document.getElementById('reviewBlock').style.display='block';
+    recalcPublic();
+  }
+  btn.disabled = false;
+}
+
+function normalizeDigits(s){ return (s||'').replace(/[^0-9]/g,''); }
+function matchesDestination(dest){
+  const destDigits = normalizeDigits(dest);
+  if(!destDigits) return null;
+  const phoneDigits = normalizeDigits(cfg.phone);
+  const cardDigits = normalizeDigits(cfg.card);
+  if(!phoneDigits && !cardDigits) return null;
+  if(phoneDigits && destDigits.length>=7){
+    const suffixLen = Math.min(9, phoneDigits.length, destDigits.length);
+    if(suffixLen>=7 && phoneDigits.slice(-suffixLen) === destDigits.slice(-suffixLen)) return true;
+  }
+  if(cardDigits){
+    const suffixLen = Math.min(destDigits.length, cardDigits.length, 4);
+    if(suffixLen>=4 && cardDigits.slice(-suffixLen) === destDigits.slice(-suffixLen)) return true;
+  }
+  return false;
+}
+function isExactReceiptDuplicate(amount, datetimeRaw){
+  if(!datetimeRaw) return false;
+  const amt = parseFloat(amount)||0;
+  return entries.some(e => e.transferLabel === datetimeRaw && e.amount === amt);
+}
+
+/* ---------- shared validation ---------- */
+function parseNamesFrom(id){ return document.getElementById(id).value.split('\n').map(s=>s.trim()).filter(Boolean); }
+function normalizeName(n){ return n.toLowerCase().replace(/\s+/g,' ').trim(); }
+function recalc(){ doRecalc('namesInput','amountInput','amountCheck','addBtn'); }
+function recalcPublic(){ doRecalc('publicNamesInput','publicAmountInput','publicAmountCheck','publicAddBtn'); }
+function doRecalc(namesId, amountId, checkId, btnId){
+  const names = parseNamesFrom(namesId);
+  const amount = parseFloat(document.getElementById(amountId).value)||0;
+  const required = names.length * cfg.price;
+  const el = document.getElementById(checkId);
+  const btn = document.getElementById(btnId);
+  if(names.length===0){ el.className='amount-check neutral'; el.textContent='Аты-жөндөрдү киргизиңиз'; btn.disabled=true; return; }
+  if(amount===required){
+    el.className='amount-check ok';
+    el.textContent = `✓ Дал келди — ${names.length} адам × ${cfg.price} = ${required} сом`;
+    btn.disabled=false;
+  } else {
+    el.className='amount-check bad';
+    el.textContent = `✕ Дал келген жок — ${names.length} адам үчүн ${required} сом болушу керек`;
+    btn.disabled=true;
+  }
+}
+function findDuplicates(names){
+  const existingNorm = entries.flatMap(e=>e.names.map(n=>({raw:n, norm:normalizeName(n), date:e.date})));
+  const dups = [];
+  names.forEach(n=>{
+    const norm = normalizeName(n);
+    const match = existingNorm.find(x=>x.norm===norm);
+    if(match) dups.push({name:n, existing:match});
+  });
+  return dups;
+}
+
+function tryAddEntry(isPublic){
+  if(isPublic && campaign.status!=='open'){ toast('Азырынча ачык фонд жок'); return; }
+  const namesId = isPublic ? 'publicNamesInput' : 'namesInput';
+  const amountId = isPublic ? 'publicAmountInput' : 'amountInput';
+  const names = parseNamesFrom(namesId);
+  const amount = parseFloat(document.getElementById(amountId).value)||0;
+  const datetimeRaw = isPublic ? document.getElementById('publicDatetimeInput').value.trim() : '';
+  if(isExactReceiptDuplicate(amount, datetimeRaw)){
+    toast('Бул чек мурда каттлаган — кайра кошулган жок');
+    return;
+  }
+  const dups = findDuplicates(names);
+  pendingEntry = { names, amount, datetimeRaw };
+  pendingIsPublic = isPublic;
+  if(dups.length>0){
+    pendingDuplicateNames = dups;
+    document.getElementById('dupText').textContent =
+      dups.map(d=>`«${d.name}» мурда ${d.existing.date} күнү катталган.`).join(' ');
+    document.getElementById('dupModal').classList.add('active');
+  } else {
+    commitEntry(pendingEntry, false);
+  }
+}
+function closeDupModal(){ document.getElementById('dupModal').classList.remove('active'); pendingEntry = null; }
+function confirmAddAnyway(){
+  document.getElementById('dupModal').classList.remove('active');
+  if(pendingEntry) commitEntry(pendingEntry, true);
+}
+
+function commitEntry(entry, wasDuplicate){
+  const now = Date.now();
+  const record = {
+    id: now.toString(36)+Math.random().toString(36).slice(2,6),
+    names: entry.names,
+    amount: entry.amount,
+    date: new Date(now).toLocaleString('ky-KG'),
+    transferLabel: entry.datetimeRaw || new Date(now).toLocaleString('ky-KG'),
+    addedEpoch: now,
+    duplicate: !!wasDuplicate,
+    sent: false
+  };
+  entries.push(record);
+  saveEntries();
+  toast('Кошулду ✓');
+  sendTelegramForRecord(record, wasDuplicate);
+  if(pendingIsPublic){ resetScan(); } else { document.getElementById('namesInput').value=''; document.getElementById('amountInput').value=''; recalc(); }
+  renderList();
+  renderPublicList();
+}
+
+/* ---------- telegram ---------- */
+async function sendTelegramForRecord(record, wasDuplicate){
+  if(!cfg.token || !cfg.chatId){ return; }
+  const lines = record.names.map((n,i)=>`${i+1}. ${n}`).join('\n');
+  const prefix = wasDuplicate ? '⚠️ ОКШОШ АТ (текшериңиз)\n' : '✅ Төлөм кабыл алынды\n';
+  const text = `${prefix}${lines}\n\nСумма: ${record.amount} сом\nУбакыт: ${record.transferLabel}`;
+  const ok = await sendTelegramRaw(text);
+  record.sent = ok;
+  saveEntries();
+}
+async function sendTelegramRaw(text){
+  try{
+    const res = await fetch(`https://api.telegram.org/bot${cfg.token}/sendMessage`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: cfg.chatId, text })
+    });
+    const data = await res.json();
+    return !!data.ok;
+  }catch(e){ return false; }
+}
+async function testTelegram(){
+  const ok = await sendTelegramRaw('🔧 Тестирлөө: бот туташты ✓');
+  toast(ok ? 'Байланыш ийгиликтүү ✓' : 'Байланыш ишке ашкан жок — токен/chat_id текшериңиз');
+}
+function resendEntry(id){
+  const rec = entries.find(e=>e.id===id);
+  if(rec) sendTelegramForRecord(rec, rec.duplicate);
+}
+
+/* ---------- whatsapp alert (manual tap) ---------- */
+function sendWhatsappAlert(){
+  if(!cfg.whatsapp){ toast('Админдин WhatsApp номери жөндөлгөн эмес'); return; }
+  const names = pendingDuplicateNames.map(d=>d.name).join(', ');
+  const msg = encodeURIComponent(`⚠️ Кайрымдуулук эсебинде окшош ат табылды: ${names}. Текшерип көрүңүзчү.`);
+  window.open(`https://wa.me/${cfg.whatsapp}?text=${msg}`, '_blank');
+  document.getElementById('dupModal').classList.remove('active');
+}
+
+/* ---------- lists ---------- */
+function renderList(){
+  const listEl = document.getElementById('entriesList');
+  const sorted = [...entries].sort((a,b)=>b.addedEpoch-a.addedEpoch);
+  const totalCount = entries.reduce((s,e)=>s+e.names.length,0);
+  const totalSum = entries.reduce((s,e)=>s+e.amount,0);
+  document.getElementById('totalCount').textContent = totalCount;
+  document.getElementById('totalSum').textContent = totalSum;
+  if(entries.length===0){ listEl.innerHTML = '<div class="empty-state">Азырынча эч ким төлөгөн жок.</div>'; return; }
+  listEl.innerHTML = sorted.map(e=>`
+    <div class="entry">
+      <div class="names">${e.names.map(escapeHtml).join('<br>')}</div>
+      <div class="meta"><span>${e.transferLabel}</span><span class="amt">${e.amount} сом</span></div>
+      ${e.duplicate ? '<div style="color:var(--red); font-size:11px; margin-top:4px;">⚠️ окшош ат катары белгиленген</div>' : ''}
+      <div class="row-btns">
+        ${e.sent ? '<button disabled>Telegram ✓</button>' : `<button onclick="resendEntry('${e.id}')">Кайра жөнөтүү</button>`}
+        <button onclick="deleteEntry('${e.id}')">Өчүрүү</button>
+      </div>
+    </div>
+  `).join('');
+}
+function renderPublicList(){
+  const notebook = document.getElementById('publicEntriesList');
+  const sortedEntries = [...entries].sort((a,b)=>a.addedEpoch-b.addedEpoch);
+  let idx=0;
+  const lines=[];
+  sortedEntries.forEach(e=>{
+    e.names.forEach(n=>{
+      idx++;
+      lines.push(`<div class="notebook-line">${idx}. ${escapeHtml(n)} — ${cfg.price} сом</div>`);
+    });
+  });
+  const totalSum = entries.reduce((s,e)=>s+e.amount,0);
+  document.getElementById('pubTotalCount').textContent = idx;
+  document.getElementById('pubTotalSum').textContent = totalSum;
+  notebook.innerHTML = lines.length ? lines.join('') : '<div class="notebook-empty">Азырынча эч ким которгон жок. Биринчи болуңуз!</div>';
+}
+function deleteEntry(id){
+  entries = entries.filter(e=>e.id!==id);
+  saveEntries(); renderList(); renderPublicList();
+}
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function takeScreenshot(){
+  if(typeof html2canvas === 'undefined'){ toast('Скриншот китепканасы жүктөлгөн жок'); return; }
+  const sortedEntries = [...entries].sort((a,b)=>a.addedEpoch-b.addedEpoch);
+  const flat = [];
+  sortedEntries.forEach(e=> e.names.forEach(n=> flat.push(n)));
+  if(flat.length===0){ toast('Тизме бош'); return; }
+  const chunkSize = 50;
+  const chunks = [];
+  for(let i=0;i<flat.length;i+=chunkSize) chunks.push(flat.slice(i,i+chunkSize));
+  toast(`Скриншот даярдалып жатат... (${chunks.length} бөлүк)`);
+  for(let c=0;c<chunks.length;c++){
+    const start = c*chunkSize+1;
+    const end = start + chunks[c].length - 1;
+    const container = document.createElement('div');
+    container.className = 'notebook';
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '420px';
+    container.innerHTML = chunks[c].map((n,i)=>`<div class="notebook-line">${start+i}. ${escapeHtml(n)} — ${cfg.price} сом</div>`).join('');
+    document.body.appendChild(container);
+    try{
+      const canvas = await html2canvas(container, { backgroundColor:'#fffdf6', scale:2 });
+      const link = document.createElement('a');
+      link.download = `kayrymduuluk-tizme-${start}-${end}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      await new Promise(r=>setTimeout(r,300));
+    }catch(e){ /* skip failed chunk */ }
+    document.body.removeChild(container);
+  }
+  toast('Скриншоттор сакталды ✓');
+}
+
+/* ---------- settings ---------- */
+function fillSettingsForm(){
+  document.getElementById('cfgToken').value = cfg.token;
+  document.getElementById('cfgChatId').value = cfg.chatId;
+  document.getElementById('cfgGemini').value = cfg.gemini;
+  document.getElementById('cfgPrice').value = cfg.price;
+  document.getElementById('cfgCard').value = cfg.card;
+  document.getElementById('cfgPhone').value = cfg.phone;
+  document.getElementById('cfgOwner').value = cfg.owner;
+  document.getElementById('cfgWhatsapp').value = cfg.whatsapp;
+  document.getElementById('qrFileStatus').textContent = cfg.qr ? 'Сүрөт жүктөлгөн ✓' : '';
+}
+document.getElementById('cfgQrFile').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    cfg.qr = ev.target.result;
+    document.getElementById('qrFileStatus').textContent = 'Сүрөт жүктөлдү ✓ (Сактоо баскычын басыңыз)';
+  };
+  reader.readAsDataURL(file);
+});
+function saveSettings(){
+  cfg.token = document.getElementById('cfgToken').value.trim();
+  cfg.chatId = document.getElementById('cfgChatId').value.trim();
+  cfg.gemini = document.getElementById('cfgGemini').value.trim();
+  cfg.price = parseFloat(document.getElementById('cfgPrice').value)||150;
+  cfg.card = document.getElementById('cfgCard').value.trim();
+  cfg.phone = document.getElementById('cfgPhone').value.trim();
+  cfg.owner = document.getElementById('cfgOwner').value.trim();
+  cfg.whatsapp = document.getElementById('cfgWhatsapp').value.trim().replace(/[^0-9]/g,'');
+  const newPin = document.getElementById('cfgPin').value.trim();
+  if(newPin.length>=4) cfg.pin = newPin;
+  saveConfig();
+  document.getElementById('cfgPin').value='';
+  toast('Сакталды ✓');
+  renderDonateView(); recalc(); renderPublicList();
+}
+
+/* ---------- init ---------- */
+renderDonateView();
+refreshPinGate();
+recalc();
+recalcPublic();
+renderPublicList();
+</script>
+
+</body>
+</html>
